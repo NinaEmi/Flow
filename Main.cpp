@@ -20,7 +20,7 @@ struct FileContent
 
 struct CSVData
 {
-    vector<vector <string> > data;
+    vector<vector<string>> data;
     string description;
 };
 
@@ -54,6 +54,7 @@ public:
     virtual ~Step(){};
 };
 
+// Functie generica pentru efectuarea operatiilor pe tipuri de date template
 template <typename T>
 void performOperation(const T &numberInput, const T &calculusStep, const string &operationStr)
 {
@@ -542,8 +543,7 @@ public:
     }
 };
 
-// Clasa pentru gestionarea fluxului
-
+// functie pentru a scrie flow-uri in fisier
 void writeFlowToFile(const Flow &flow, const string &filename)
 {
     ofstream file(filename, ios::app);
@@ -607,7 +607,6 @@ void writeFlowToFile(const Flow &flow, const string &filename)
                 file << endStep->getEndStep() << endl;
             }
         }
-
         file.close();
     }
     else
@@ -665,6 +664,7 @@ bool containsAlphanumeric(const string &input)
     return true;
 }
 
+// functie pentru verificarea unei intrari string
 string validateStringInput(const string &prompt, int &contor)
 {
     string input;
@@ -701,22 +701,27 @@ string validateStringInput(const string &prompt, int &contor)
     return input;
 }
 
+// fu
 vector<Flow> readFlowsFromFile(const string &filename)
 {
+    // Vector pentru a stoca fluxurile citite
     vector<Flow> flows;
     ifstream file(filename);
 
     if (file.is_open())
     {
+        // Variabile pentru a stoca linia curentă și informațiile despre flux
         string line;
         string currentFlowTitle;
         bool isReadingFlow = false;
         Flow currentFlow("temp");
 
+        // Citește fiecare linie din fișier
         while (getline(file, line))
         {
             if (line.substr(0, 11) == "Flow Title:")
             {
+                // Dacă deja se citește un flux, îl adaugă în vector și începe unul nou
                 if (isReadingFlow)
                 {
                     flows.push_back(currentFlow);
@@ -726,7 +731,7 @@ vector<Flow> readFlowsFromFile(const string &filename)
                 currentFlow = Flow(currentFlowTitle);
                 isReadingFlow = true;
             }
-            else
+            else // Identificăm și extragem informații în funcție de tipul de pas
             {
                 // Verificăm tipul de pas și extragem informațiile corespunzătoare
                 if (line.find("Title Step") != string::npos)
@@ -821,7 +826,6 @@ vector<Flow> readFlowsFromFile(const string &filename)
                 }
             }
         }
-
         // Adăugăm ultimul flux citit în vectorul de fluxuri
         if (isReadingFlow)
         {
@@ -838,16 +842,18 @@ vector<Flow> readFlowsFromFile(const string &filename)
     return flows;
 }
 
+// functie pentru a rula un flow
 int runFlow(const Flow &flow)
 {
-    cout << "Running flow: " << flow.getFlowTitle() << endl;
+
+    cout << "Running flow: " << flow.getFlowTitle() << endl; // Afișează titlul fluxului care rulează
 
     int currentStepIndex = 0;
     int contor = 0;
 
-    while (currentStepIndex < flow.getSteps().size())
+    while (currentStepIndex < flow.getSteps().size()) // Parcurge fiecare pas din flux
     {
-        Step *currentStep = flow.getSteps()[currentStepIndex];
+        Step *currentStep = flow.getSteps()[currentStepIndex]; // Obține pointerul către pasul curent din flux
 
         char choice;
         cout << "Press 'n' for next step, 's' to skip: ";
@@ -867,7 +873,7 @@ int runFlow(const Flow &flow)
             continue;
         }
 
-        currentStep->displayInfo();
+        currentStep->displayInfo(); // Afișează informațiile despre pasul curent
 
         currentStepIndex++;
     }
@@ -875,6 +881,7 @@ int runFlow(const Flow &flow)
     return contor;
 }
 
+// functie pentru a sterge un flow din fisier
 void deleteFlowFromFile(const string &filename, const string &flowTitleToDelete)
 {
     vector<Flow> flows = readFlowsFromFile(filename);
@@ -900,6 +907,7 @@ void deleteFlowFromFile(const string &filename, const string &flowTitleToDelete)
 
     if (rewriteFile.is_open())
     {
+        // Parcurge fluxurile și rescrie în fișierul temporar, excludând fluxul șters
         for (const Flow &flow : flows)
         {
             if (flow.getFlowTitle() != flowTitleToDelete)
@@ -915,7 +923,30 @@ void deleteFlowFromFile(const string &filename, const string &flowTitleToDelete)
                     {
                         rewriteFile << "Text Step - Title: " << textStep->getTitle() << ", Copy: " << textStep->getCopy() << endl;
                     }
-                    // TODO: Adaugă condiții pentru celelalte tipuri de pași, similar cu cum ai făcut în funcția de scriere în fișier
+                    else if (auto *textInputStep = dynamic_cast<TextInput *>(step))
+                    {
+                        rewriteFile << "Text Input - Description: " << textInputStep->getDescription() << ", Text Input: " << textInputStep->getTextInput() << endl;
+                    }
+                    else if (auto *numberInputStep = dynamic_cast<NumberInput *>(step))
+                    {
+                        rewriteFile << "Number Input - Description: " << numberInputStep->getDescription() << ", Number Input: " << numberInputStep->getNumberInput() << endl;
+                    }
+                    else if (auto *calculusStep = dynamic_cast<CalculusStep *>(step))
+                    {
+                        rewriteFile << "Calculus Step - Steps: " << calculusStep->getSteps() << ", Operation: " << calculusStep->getOperation() << endl;
+                    }
+                    else if (auto *textFileStep = dynamic_cast<TextFileInputStep *>(step))
+                    {
+                        rewriteFile << "Text File Input Step - Description: " << textFileStep->getDescription() << ", File Name: " << textFileStep->getFile_name() << endl;
+                    }
+                    else if (auto *csvFileStep = dynamic_cast<CSVFileInputStep *>(step))
+                    {
+                        rewriteFile << "CSV File Input Step - Description: " << csvFileStep->getDescription() << ", File Name: " << csvFileStep->getFile_name() << endl;
+                    }
+                    else if (auto *outputStep = dynamic_cast<OutputStep *>(step))
+                    {
+                        rewriteFile << "Output Step - Steps: " << outputStep->getStep() << ", File Name: " << outputStep->getFile_name() << ", Title: " << outputStep->getTitle() << ", Description: " << outputStep->getDescription() << endl;
+                    }
                 }
             }
         }
@@ -934,7 +965,7 @@ void deleteFlowFromFile(const string &filename, const string &flowTitleToDelete)
     }
 }
 
-bool askForContinue()
+bool askForContinue() // functie pentru a contiuna sau nu programul
 {
     char choice;
     cout << endl;
@@ -944,7 +975,7 @@ bool askForContinue()
     return (toupper(choice) == 'Y');
 }
 
-bool titleExists(const string &filename, const string &newTitle)
+bool titleExists(const string &filename, const string &newTitle) // functie pentru verificarea daca flowul deja exista sau nu, dupa titlu
 {
     ifstream file(filename);
     string line;
@@ -973,7 +1004,7 @@ bool titleExists(const string &filename, const string &newTitle)
     return false;
 }
 
-bool hasTxtExtension(const string &fileName)
+bool hasTxtExtension(const string &fileName) // verificam daca are extensia .txt
 {
     size_t pos = fileName.find_last_of(".");
     if (pos != string::npos)
@@ -984,7 +1015,7 @@ bool hasTxtExtension(const string &fileName)
     return false;
 }
 
-bool hasCsvExtension(const string &fileName)
+bool hasCsvExtension(const string &fileName) // verificam daca are extensia .csv
 {
     size_t pos = fileName.find_last_of(".");
     if (pos != string::npos)
@@ -997,6 +1028,7 @@ bool hasCsvExtension(const string &fileName)
 
 int chooseFileToDisplay(const vector<FileContent> &fileContents)
 {
+    // Afișează opțiunile disponibile pentru fișiere
     cout << "Choose a file to display:" << endl;
     for (size_t i = 0; i < fileContents.size(); ++i)
     {
@@ -1006,29 +1038,39 @@ int chooseFileToDisplay(const vector<FileContent> &fileContents)
     int choice;
     do
     {
+        // Solicită utilizatorului să aleagă un fișier
         cout << "Enter your choice (1-" << fileContents.size() << "): ";
+
+        // Verifică dacă a fost introdus un număr valid
         if (!(cin >> choice) || choice < 1 || choice > static_cast<int>(fileContents.size()))
         {
+            // Resetează starea eronată a fluxului de intrare și ignoră restul liniilor
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            // Afișează un mesaj de eroare și cere o nouă introducere
             cout << "Invalid choice. Please enter a valid number." << endl;
         }
         else
         {
-            cin.ignore(); // Consumăm newline-ul lăsat de cin >> choice
-            break;
+            // Consumă newline-ul lăsat de cin >> choice
+            cin.ignore();
+            break; // Ieșire din buclă dacă a fost introdus un număr valid
         }
     } while (true);
 
+    // Returnează opțiunea aleasă ajustată la indexul de bază 0
     return choice - 1;
 }
 
-FileContent uploadFile(const string &filePath)
+FileContent uploadFile(const string &filePath) // are rolul de a încărca conținutul unui fișier specificat și de a
 {
+    // Deschide fișierul pentru citire
     ifstream file(filePath);
     FileContent fileContent;
 
     int errorCount = 0;
+
     if (file.is_open())
     {
         cout << "File opened successfully!" << endl;
@@ -1038,19 +1080,24 @@ FileContent uploadFile(const string &filePath)
         buffer << file.rdbuf();
         fileContent.content = buffer.str();
 
+        // Solicită utilizatorului să introducă descrierea fișierului
         fileContent.description = validateStringInput("Enter File Description: ", errorCount);
 
+        // Închide fișierul
         file.close();
     }
     else
     {
         cout << "Failed to open file!" << endl;
     }
+
+    // Returnează structura FileContent, inclusiv conținutul fișierului și descrierea
     return fileContent;
 }
 
-CSVData uploadCSVFile(const string &filePath)
+CSVData uploadCSVFile(const string &filePath) // are rolul de a incarca un fisier CSV
 {
+    // Deschide fișierul pentru citire
     ifstream file(filePath);
     CSVData csvData;
     int errorCount = 0;
@@ -1060,27 +1107,34 @@ CSVData uploadCSVFile(const string &filePath)
         cout << "File opened successfully!" << endl;
 
         // Salvează conținutul fișierului CSV într-un vector bidimensional
-        vector<vector <string> > table;
+        vector<vector<string>> table;
         string line;
 
+        // Parcurge fiecare linie din fișierul CSV
         while (getline(file, line))
         {
+            // Utilizează un flux de șiruri pentru a separa valorile într-o linie
             istringstream iss(line);
             vector<string> row;
 
             string field;
+            // Parcurge fiecare valoare din linie, delimitată de virgulă
             while (getline(iss, field, ','))
             {
                 row.push_back(field);
             }
 
+            // Adaugă rândul la tabelul bidimensional
             table.push_back(row);
         }
 
+        // Salvează tabelul în obiectul CSVData
         csvData.data = table;
 
+        // Solicită utilizatorului să introducă descrierea pentru fișierul CSV
         csvData.description = validateStringInput("Enter CSV File Description: ", errorCount);
 
+        // Închide fișierul
         file.close();
     }
     else
@@ -1088,6 +1142,7 @@ CSVData uploadCSVFile(const string &filePath)
         cout << "Failed to open file!" << endl;
     }
 
+    // Returnează obiectul CSVData, care conține atât conținutul tabelului CSV, cât și descrierea asociată
     return csvData;
 }
 
@@ -1296,7 +1351,7 @@ int main()
                                         cin.clear();
                                         cin.ignore(numeric_limits<streamsize>::max(), '\n');
                                         cout << "Invalid choice. Please enter a valid number." << endl;
-                                        errorCountInt ++;
+                                        errorCountInt++;
 
                                         char choice;
                                         cout << "Do you want to try again? (Y/N): ";
@@ -1351,21 +1406,24 @@ int main()
                                 }
                                 break;
                             }
-
                             case 7:
                             {
                                 string filePath;
 
                                 do
                                 {
+                                    // Solicită utilizatorului să introducă calea fișierului pentru încărcare
                                     cout << "Enter the path of the file to upload: ";
                                     getline(cin, filePath);
+
+                                    // Încarcă conținutul fișierului și verifică extensia
                                     FileContent fileContent = uploadFile(filePath);
 
                                     if (!hasTxtExtension(filePath))
                                     {
+                                        // Afișează mesajul de eroare și încearcă din nou dacă extensia nu este .txt
                                         cout << "The file does not have a .txt extension." << endl;
-                                        errorCountInt ++;
+                                        errorCountInt++;
 
                                         char choice;
                                         cout << "Do you want to try again? (Y/N): ";
@@ -1374,15 +1432,16 @@ int main()
 
                                         if (toupper(choice) != 'Y')
                                         {
-                                            break;
+                                            break; // Ieșire din bucla do-while dacă utilizatorul nu dorește să încerce din nou
                                         }
                                     }
                                     else
                                     {
+                                        // Adaugă conținutul fișierului și un pas TextFileInputStep la fluxul curent
                                         myFlow.addFileContent(fileContent);
                                         myFlow.addStep(new TextFileInputStep(textFileDescription, filePath));
                                         cin.ignore();
-                                        break;
+                                        break; // Ieșire din bucla do-while dacă totul este în regulă
                                     }
 
                                 } while (true);
@@ -1395,15 +1454,18 @@ int main()
 
                                 do
                                 {
+                                    // Solicită utilizatorului să introducă calea fișierului CSV pentru încărcare
                                     cout << "Enter the path of the CSV file: ";
                                     getline(cin, csvFilePath);
 
+                                    // Încarcă conținutul fișierului și verifică extensia
                                     FileContent fileContent = uploadFile(csvFilePath);
 
                                     if (!hasCsvExtension(csvFilePath))
                                     {
+                                        // Afișează mesajul de eroare și încearcă din nou dacă extensia nu este .csv
                                         cout << "The file does not have a .csv extension." << endl;
-                                        errorCountInt ++;
+                                        errorCountInt++;
 
                                         char choice;
                                         cout << "Do you want to try again? (Y/N): ";
@@ -1412,19 +1474,22 @@ int main()
 
                                         if (toupper(choice) != 'Y')
                                         {
-                                            break; // Exit the loop if the user chooses not to try again
+                                            break; // Ieșire din bucla do-while dacă utilizatorul nu dorește să încerce din nou
                                         }
                                     }
                                     else
                                     {
+                                        // Adaugă conținutul fișierului și un pas CSVFileInputStep la fluxul curent
                                         myFlow.addFileContent(fileContent);
                                         myFlow.addStep(new CSVFileInputStep(csvFileDescription, csvFilePath));
                                         cin.ignore();
-                                        break;
+                                        break; // Ieșire din bucla do-while dacă totul este în regulă
                                     }
                                 } while (true);
+
                                 break;
                             }
+
                             case 9:
                             {
                                 const vector<Step *> &steps = myFlow.getSteps();
@@ -1432,7 +1497,7 @@ int main()
                                 getline(cin, nameFile);
                                 cout << "Enter Title of File you want to generate: ";
                                 getline(cin, titleOutput);
-                                cout <<"Enter a Description ";
+                                cout << "Enter a Description ";
                                 getline(cin, descriptionOutput);
 
                                 ofstream file(nameFile + ".txt", ios::app); // Deschide în modul append
@@ -1507,7 +1572,7 @@ int main()
                                         }
                                     }
 
-                                    myFlow.addStep(new OutputStep(index, nameFile, titleOutput,descriptionOutput));
+                                    myFlow.addStep(new OutputStep(index, nameFile, titleOutput, descriptionOutput));
 
                                     cout << "Do you want to add another step? (y/n): ";
                                     string answer;
@@ -1566,19 +1631,23 @@ int main()
 
             case 2:
             {
+                // Citeste fluxurile din fisierul "flow.txt"
                 vector<Flow> flows = readFlowsFromFile("flow.txt");
 
+                // Afișează titlurile fluxurilor disponibile pentru execuție
                 cout << "Flows available for execution: " << endl;
                 for (const auto &flow : flows)
                 {
                     cout << flow.getFlowTitle() << endl;
                 }
 
+                // Ignoră newline-ul rămas în buffer și solicită utilizatorului să introducă numele fluxului dorit pentru execuție
                 cin.ignore();
                 string chosenFlowTitle;
                 cout << "Enter the name of the flow you want to run: ";
                 getline(cin, chosenFlowTitle);
 
+                // Verifică dacă fluxul a fost găsit
                 bool found = false;
                 Flow chosenFlow("temp");
 
@@ -1594,10 +1663,11 @@ int main()
 
                 if (found == true)
                 {
+                    // Rulează fluxul ales și obține numărul de ecrane omise
                     int skippedScreensCount = runFlow(chosenFlow);
                     cout << "The screen was skipped " << skippedScreensCount << " times." << endl;
 
-                    // Incrementăm numărul de rulări pentru flow-ul specificat sau îl adăugăm în map
+                    // Incrementăm numărul de rulări pentru flux-ul specificat sau îl adăugăm în map
                     flowRuns[chosenFlow.getFlowTitle()]++;
                 }
                 else
@@ -1607,14 +1677,17 @@ int main()
 
                 break;
             }
+
             case 3:
             {
+                // Ignoră newline-ul rămas în buffer și solicită utilizatorului să introducă numele fluxului pe care dorește să-l șteargă
                 cin.ignore();
                 string flowTitleToDelete;
                 cout << "Enter the name of the flow you want to delete: ";
                 getline(cin, flowTitleToDelete);
                 cout << endl;
 
+                // Șterge fluxul specificat din fișierul "flow.txt"
                 deleteFlowFromFile("flow.txt", flowTitleToDelete);
                 break;
             }
